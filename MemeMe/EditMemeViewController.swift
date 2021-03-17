@@ -7,18 +7,17 @@
 
 import UIKit
 
-struct Meme {
-    var topText: String!
-    var bottomText: String!
-    var originalImage: UIImage!
-    var memedImage: UIImage!
-}
-
-class ViewController: UIViewController, UIImagePickerControllerDelegate,
+class EditMemeViewController: UIViewController, UIImagePickerControllerDelegate,
 UINavigationControllerDelegate, UITextFieldDelegate  {
     
     let topText: String = "TOP"
     let bottomText: String = "BOTTOM"
+    let memeTextAttributes: [NSAttributedString.Key: Any] = [
+        NSAttributedString.Key.strokeColor: UIColor.black,
+        NSAttributedString.Key.foregroundColor: UIColor.white,
+        NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
+        NSAttributedString.Key.strokeWidth:  -3.5
+    ]
 
     @IBOutlet weak var topTextField: UITextField!
     @IBOutlet weak var bottomTextField: UITextField!
@@ -28,23 +27,6 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
         
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        topTextField.textAlignment = .center
-        bottomTextField.textAlignment = .center
-        
-        topTextField.delegate = self
-        bottomTextField.delegate = self
-        
-        let memeTextAttributes: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key.strokeColor: UIColor.black,
-            NSAttributedString.Key.foregroundColor: UIColor.white,
-            NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
-            NSAttributedString.Key.strokeWidth:  -5.0
-        ]
-        
-        topTextField.defaultTextAttributes = memeTextAttributes
-        bottomTextField.defaultTextAttributes = memeTextAttributes
-        
         imageView.contentMode = .scaleAspectFit
     }
     
@@ -53,11 +35,13 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
         setToDefaultState()
         subscribeToKeyboardNotifications()
         cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        self.navigationController?.setToolbarHidden(false, animated: false)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         unsubscribeFromKeyboardNotifications()
+        self.navigationController?.setToolbarHidden(true, animated: false)
     }
     
     func subscribeToKeyboardNotifications() {
@@ -86,9 +70,16 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
         return keyboardSize.cgRectValue.height
     }
     
+    func setTextField(field: UITextField, withAttributes: [NSAttributedString.Key: Any], toText: String) {
+        field.text = toText
+        field.delegate = self
+        field.defaultTextAttributes = withAttributes
+        field.textAlignment = .center
+    }
+    
     func setToDefaultState() {
-        topTextField.text = topText
-        bottomTextField.text = bottomText
+        setTextField(field: self.topTextField, withAttributes: memeTextAttributes, toText: topText)
+        setTextField(field: self.bottomTextField, withAttributes: memeTextAttributes, toText: bottomText)
         imageView.image = UIImage(systemName: "photo.fill")
         shareButton.isEnabled = false
     }
@@ -97,12 +88,11 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
             // Create the meme
         let meme = Meme(topText: topTextField.text!, bottomText: bottomTextField.text!, originalImage: imageView.image!, memedImage: memedImage)
         
-        //let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        //appDelegate.memes.append(meme)
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        appDelegate.memes.append(meme)
     }
     
     func generateMemedImage() -> UIImage {
-        
         navigationController?.setToolbarHidden(true, animated: false)
         navigationController?.setNavigationBarHidden(true, animated: false)
 
@@ -127,7 +117,7 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
     }
     
     @IBAction func cancelImage(_ sender: Any) {
-        setToDefaultState()
+        navigationController?.popViewController(animated: true)
     }
     
     @IBAction func shareMemedImage(_ sender: Any) {
@@ -138,6 +128,7 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
             if completed {
                 print("share completed")
                 self.saveMemedImage(memedImage)
+                self.navigationController?.popViewController(animated: true)
                 return
             } else {
                 print("cancel")
@@ -170,7 +161,6 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let image = info[.originalImage] as? UIImage {
             self.imageView.image = image
-            //self.alignTextFielsdInImage(image)
             shareButton.isEnabled = true
         }
         picker.dismiss(animated: true, completion: nil)
@@ -179,36 +169,5 @@ UINavigationControllerDelegate, UITextFieldDelegate  {
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true, completion: nil)
     }
-    
-//    func alignTextFielsdInImage(_ myImage: UIImage) {
-//
-//        let imageSize = self.imageView.image?.size
-//        let imageAspectRatio: CGFloat = imageSize!.height / imageSize!.width
-//
-//        let frameSize = self.imageView.frame.size
-//        let frameAspectRatio: CGFloat = frameSize.height / frameSize.width
-//
-//        var verticalConstant: CGFloat = 5.0
-//        var horizontalConstant: CGFloat = 8.0
-//
-//        /* Compute the size of the image as seen on display (not in image pixels!) and
-//            update the constraint constants for the textfields */
-//        if imageAspectRatio > frameAspectRatio {
-//            let scaledImageWidth = 1.0 / imageAspectRatio * frameSize.height
-//            horizontalConstant += 0.5 * (frameSize.width - scaledImageWidth)
-//        } else {
-//            let scaledImageHeight = imageAspectRatio * frameSize.width
-//            verticalConstant += 0.5 * (frameSize.height - scaledImageHeight)
-//        }
-//
-//        // Adapt top and bottom textfield for the size of the chosen image
-//        for constraint in self.view.constraints {
-//            if constraint.identifier == "horizontalTextFieldConstraint" {
-//                constraint.constant = horizontalConstant
-//            } else if constraint.identifier == "verticalTextFieldConstraint" {
-//                constraint.constant = verticalConstant
-//            }
-//        }
-//        self.view.setNeedsUpdateConstraints()
-//    }
+
 }
