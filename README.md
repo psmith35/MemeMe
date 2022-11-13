@@ -6,8 +6,6 @@ This iOS app allows a user to create memes with a photo and two lines of text an
 
 - Creating Memes
 - Viewing Memes
-- Editing Memes
-- Sharing Memes
 
 ## Tech Stack
 
